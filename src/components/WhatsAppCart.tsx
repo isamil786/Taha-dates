@@ -20,8 +20,8 @@ export function WhatsAppCart() {
   const totalPrice = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   const handleWhatsAppSend = () => {
-    const phoneNumber = "919876543210"; 
-    
+    const phoneNumber = "919550897780";
+
     let text = `*New Order from Taha Dates & Nuts*\n`;
     text += `=========================\n\n`;
     
