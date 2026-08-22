@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+
+// Use the Node.js runtime for this API so we can use Buffer and fs safely
+export const runtime = "nodejs";
 import { getAllItems, updateItemPrice } from "@/lib/db";
 import { verifySessionToken } from "@/lib/auth";
 
