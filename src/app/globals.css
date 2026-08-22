@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #f5f1e8;
+  --bg-soft: #faf6ef;
+  --surface: rgba(255, 255, 255, 0.75);
+  --surface-strong: #ffffff;
+  --surface-alt: #eef4ee;
+  --primary: #8ca67f;
+  --primary-strong: #6d8768;
+  --primary-soft: #edf3ea;
+  --accent: #c98c60;
+  --accent-soft: #f8eadf;
+  --text: #1f2b24;
+  --text-soft: #58635d;
+  --muted: #7d867f;
+  --line: rgba(63, 79, 67, 0.12);
+  --shadow-soft: 0 18px 40px rgba(31, 43, 36, 0.08);
+  --shadow-strong: 0 24px 50px rgba(31, 43, 36, 0.12);
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply font-sans text-[color:var(--text)] bg-[color:var(--bg)] antialiased;
+    background-image:
+      radial-gradient(circle at top left, rgba(200, 140, 96, 0.12), transparent 28%),
+      radial-gradient(circle at top right, rgba(140, 166, 127, 0.12), transparent 22%),
+      linear-gradient(135deg, #f7f1e7 0%, #f3f6f0 38%, #f7f2ea 100%);
+  }
+}
+
+@layer components {
+  .sort-pill {
+    @apply rounded-full px-4 py-2 text-[10px] font-bold uppercase tracking-[0.18em] transition-all duration-200 border;
+  }
+
+  .sort-pill-active {
+    background-color: var(--primary);
+    border-color: var(--primary);
+    color: white;
+    box-shadow: 0 10px 24px rgba(111, 138, 110, 0.18);
+  }
+
+  .sort-pill-inactive {
+    background-color: rgba(255, 255, 255, 0.8);
+    border-color: var(--line);
+    color: var(--text-soft);
+  }
+
+  .sort-pill-inactive:hover {
+    background-color: var(--primary-soft);
+    color: var(--text);
+  }
+}
+
+@layer utilities {
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 1rem);
+  }
+
+  .glass-panel {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(54, 76, 62, 0.08);
+    box-shadow: var(--shadow-soft);
+  }
+}
