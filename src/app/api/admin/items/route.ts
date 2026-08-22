@@ -23,7 +23,6 @@ export async function PATCH(request: NextRequest) {
   if (!isAuthenticated(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  try {
     const { id, price } = await request.json();
 
     if (typeof id !== "number" || typeof price !== "number" || price < 0) {
