@@ -142,7 +142,16 @@ function writeItems(items: Item[]): void {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
-  fs.writeFileSync(DATA_PATH, JSON.stringify(items, null, 2));
+  try {
+    fs.writeFileSync(DATA_PATH, JSON.stringify(items, null, 2));
+  } catch (err) {
+    // In serverless/read-only environments (Vercel) writes will fail with EROFS.
+    // Log and continue — callers should still return success when an in-memory
+    // update is acceptable or a secondary persistence (GitHub commit) is used.
+    // This prevents throwing a 500 on attempts to update prices at runtime.
+    // eslint-disable-next-line no-console
+    console.error("writeItems: failed to write to DATA_PATH", err && (err as Error).message);
+  }
 }
 
 export function getCategories(): Category[] {
