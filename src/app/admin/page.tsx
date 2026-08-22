@@ -88,6 +88,15 @@ export default function AdminPage() {
       );
       setMessage("Price updated!");
       setTimeout(() => setMessage(""), 2000);
+      try {
+        if (typeof window !== "undefined" && "BroadcastChannel" in window) {
+          const bc = new BroadcastChannel("items-updates");
+          bc.postMessage({ id, price });
+          bc.close();
+        }
+      } catch (err) {
+        // ignore
+      }
     }
     setSaving(false);
     setEditingId(null);

@@ -14,6 +14,7 @@ type Props = {
 
 export function HomePageClient({ initialCategories, initialItems }: Props) {
   const [search, setSearch] = useState("");
+  const [items, setItems] = useState<Item[]>(initialItems);
   const [filteredItems, setFilteredItems] = useState<Item[]>([]);
   const [addedItemIds, setAddedItemIds] = useState<Record<number, boolean>>({});
 
@@ -24,7 +25,7 @@ export function HomePageClient({ initialCategories, initialItems }: Props) {
     }
 
     const query = search.toLowerCase();
-    const matches = initialItems.filter(
+    const matches = items.filter(
       (item) =>
         item.price > 0 &&
         (item.name.toLowerCase().includes(query) ||
@@ -32,7 +33,25 @@ export function HomePageClient({ initialCategories, initialItems }: Props) {
     );
     matches.sort((a, b) => a.price - b.price);
     setFilteredItems(matches);
-  }, [search, initialItems]);
+  }, [search, items]);
+
+  useEffect(() => {
+    setItems(initialItems);
+  }, [initialItems]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const bc = new BroadcastChannel("items-updates");
+      bc.onmessage = (e) => {
+        const { id, price } = e.data as { id: number; price: number };
+        setItems((prev) => prev.map((it) => (it.id === id ? { ...it, price } : it)));
+      };
+      return () => bc.close();
+    } catch (err) {
+      // ignore older browsers
+    }
+  }, []);
 
   const handleAddToOrder = (item: Item) => {
     cartStore.addItem({
@@ -49,7 +68,7 @@ export function HomePageClient({ initialCategories, initialItems }: Props) {
     }, 1000);
   };
 
-  const totalItems = initialItems.filter(i => i.price > 0).length;
+  const totalItems = items.filter((i) => i.price > 0).length;
 
   return (
     <div className="min-h-screen pb-24 text-[color:var(--text)]">

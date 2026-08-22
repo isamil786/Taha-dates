@@ -18,11 +18,12 @@ type SortOption = "price-asc" | "price-desc" | "name-asc";
 export function CategoryPageClient({ categoryName, categoryIcon, initialItems }: Props) {
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("price-asc");
+  const [baseItems, setBaseItems] = useState<Item[]>(initialItems);
   const [items, setItems] = useState<Item[]>(initialItems);
   const [addedItemIds, setAddedItemIds] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
-    let result = [...initialItems];
+    let result = [...baseItems];
 
     if (search.trim()) {
       const query = search.toLowerCase();
@@ -40,7 +41,25 @@ export function CategoryPageClient({ categoryName, categoryIcon, initialItems }:
     }
 
     setItems(result);
-  }, [search, sortBy, initialItems]);
+  }, [search, sortBy, baseItems]);
+
+  useEffect(() => {
+    setBaseItems(initialItems);
+  }, [initialItems]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const bc = new BroadcastChannel("items-updates");
+      bc.onmessage = (e) => {
+        const { id, price } = e.data as { id: number; price: number };
+        setBaseItems((prev) => prev.map((it) => (it.id === id ? { ...it, price } : it)));
+      };
+      return () => bc.close();
+    } catch (err) {
+      // ignore
+    }
+  }, []);
 
   const handleAddToOrder = (item: Item) => {
     cartStore.addItem({
@@ -88,7 +107,7 @@ export function CategoryPageClient({ categoryName, categoryIcon, initialItems }:
                   {categoryName}
                 </h1>
                 <p className="text-xs font-semibold text-[color:var(--text-soft)]">
-                  {initialItems.length} items total
+                  {baseItems.length} items total
                 </p>
               </div>
             </div>
