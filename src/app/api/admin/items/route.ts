@@ -20,17 +20,17 @@ export async function PATCH(request: NextRequest) {
   if (!isAuthenticated(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  try {
+    const { id, price } = await request.json();
 
-  const { id, price } = await request.json();
+    if (typeof id !== "number" || typeof price !== "number" || price < 0) {
+      return NextResponse.json({ error: "Invalid data" }, { status: 400 });
+    }
 
-  if (typeof id !== "number" || typeof price !== "number" || price < 0) {
-    return NextResponse.json({ error: "Invalid data" }, { status: 400 });
-  }
-
-  const success = updateItemPrice(id, price);
-  if (!success) {
-    return NextResponse.json({ error: "Item not found" }, { status: 404 });
-  }
+    const success = updateItemPrice(id, price);
+    if (!success) {
+      return NextResponse.json({ error: "Item not found" }, { status: 404 });
+    }
 
   // If a GitHub token is available in the environment, also commit the updated
   // data file back to the repository so the change persists across Vercel
@@ -99,19 +99,19 @@ export async function PATCH(request: NextRequest) {
       }
     }
   } catch (err) {
-    debugMsgs.push("exception: " + String(err));
-    console.error("Error committing to GitHub:", err);
+    // If any unexpected error occurs, return a JSON error and include debug info when requested
+    console.error("Unhandled error in PATCH /api/admin/items:", err);
+    const wantsDebug = request.headers.get("x-debug") === "1";
+    if (wantsDebug) {
+      return NextResponse.json({ error: "internal", _debug: String(err) }, { status: 500 });
+    }
+    return NextResponse.json({ error: "internal" }, { status: 500 });
   }
 
   // If client requested debug, include debug messages
-  try {
-    const wantsDebug = request.headers.get("x-debug") === "1";
-    if (wantsDebug) {
-      return NextResponse.json({ success: true, _debug: debugMsgs.join(" | ") });
-    }
-  } catch (err) {
-    // ignore
+  const wantsDebug = request.headers.get("x-debug") === "1";
+  if (wantsDebug) {
+    return NextResponse.json({ success: true, _debug: debugMsgs.join(" | ") });
   }
-
   return NextResponse.json({ success: true });
 }
