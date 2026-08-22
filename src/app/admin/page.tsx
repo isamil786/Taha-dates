@@ -76,11 +76,22 @@ export default function AdminPage() {
     if (isNaN(price) || price < 0) return;
 
     setSaving(true);
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    try {
+      if (typeof window !== "undefined" && window.location.search.includes("debug=1")) {
+        headers["x-debug"] = "1";
+      }
+    } catch (err) {
+      // ignore
+    }
+
     const res = await fetch("/api/admin/items", {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({ id, price }),
     });
+
+    const json = await res.json().catch(() => ({}));
 
     if (res.ok) {
       setItems((prev) =>
@@ -96,6 +107,11 @@ export default function AdminPage() {
         }
       } catch (err) {
         // ignore
+      }
+
+      if (json && json._debug) {
+        console.log("GitHub debug:", json._debug);
+        setMessage((m) => (json._debug && typeof json._debug === "string" ? `${m} (debug)` : m));
       }
     }
     setSaving(false);

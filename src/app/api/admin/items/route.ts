@@ -32,5 +32,86 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Item not found" }, { status: 404 });
   }
 
+  // If a GitHub token is available in the environment, also commit the updated
+  // data file back to the repository so the change persists across Vercel
+  // deployments (Vercel filesystem is ephemeral). Collect debug messages
+  // to return to the admin client when requested (header `x-debug: 1`).
+  const debugMsgs: string[] = [];
+  try {
+    const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+    const owner = process.env.GITHUB_OWNER ?? "isamil786";
+    const repo = process.env.GITHUB_REPO ?? "Taha-dates";
+    const branch = process.env.GITHUB_BRANCH ?? "main";
+    const filePath = "data/items.json";
+
+    if (!GITHUB_TOKEN) {
+      debugMsgs.push("no GITHUB_TOKEN in env");
+    }
+
+    if (GITHUB_TOKEN) {
+      const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}?ref=${branch}`;
+      const getRes = await fetch(apiUrl, {
+        headers: {
+          Accept: "application/vnd.github.v3+json",
+          Authorization: `Bearer ${GITHUB_TOKEN}`,
+        },
+      });
+
+      if (getRes.ok) {
+        const payload = await getRes.json();
+        const sha = payload.sha;
+        const remoteContent = JSON.parse(Buffer.from(payload.content, "base64").toString("utf8"));
+
+        // Update the item in the remote copy as well to produce a new file
+        const idx = remoteContent.findIndex((it: any) => it.id === id);
+        if (idx !== -1) {
+          remoteContent[idx].price = price;
+        }
+
+        const newContent = Buffer.from(JSON.stringify(remoteContent, null, 2)).toString("base64");
+
+        const putRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`, {
+          method: "PUT",
+          headers: {
+            Accept: "application/vnd.github.v3+json",
+            Authorization: `Bearer ${GITHUB_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message: `Update price for item ${id}`,
+            content: newContent,
+            sha,
+            branch,
+          }),
+        });
+
+        if (!putRes.ok) {
+          const txt = await putRes.text();
+          debugMsgs.push("put_failed: " + txt.substring(0, 1000));
+          console.error("GitHub commit failed", txt);
+        } else {
+          debugMsgs.push("put_ok");
+        }
+      } else {
+        const txt = await getRes.text();
+        debugMsgs.push("get_failed: " + txt.substring(0, 1000));
+        console.error("Failed to read file from GitHub", txt);
+      }
+    }
+  } catch (err) {
+    debugMsgs.push("exception: " + String(err));
+    console.error("Error committing to GitHub:", err);
+  }
+
+  // If client requested debug, include debug messages
+  try {
+    const wantsDebug = request.headers.get("x-debug") === "1";
+    if (wantsDebug) {
+      return NextResponse.json({ success: true, _debug: debugMsgs.join(" | ") });
+    }
+  } catch (err) {
+    // ignore
+  }
+
   return NextResponse.json({ success: true });
 }
